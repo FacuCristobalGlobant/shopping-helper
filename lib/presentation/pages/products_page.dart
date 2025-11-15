@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:hive_ce_poc/core/bloc_state.dart';
+import 'package:hive_ce_poc/core/theme_helper.dart';
 import 'package:hive_ce_poc/domain/entities/product.dart';
 import 'package:hive_ce_poc/presentation/bloc/product_bloc.dart';
 import 'package:hive_ce_poc/presentation/widgets/create_product_dialog.dart';
@@ -19,17 +20,20 @@ class ProductsPage extends StatefulWidget {
 class _ProductsPageState extends State<ProductsPage> {
   final List<IconData> categoriesIconData = categoriesIcons.values.toList();
   final List<String> categoriesNames = categoriesIcons.keys.toList();
+  final List<Product> productListItems = [];
 
   @override
   void initState() {
-    widget.bloc.initialize();
+    widget.bloc.refreshResults();
+    widget.bloc.stream.listen((BlocState state) {
+      productListItems.clear();
+      //productListItems.addAll(iterable)
+    });
     super.initState();
   }
 
   @override
   Widget build(BuildContext context) {
-    widget.bloc.refreshResults();
-
     return Column(
       mainAxisAlignment: MainAxisAlignment.start,
       mainAxisSize: MainAxisSize.max,
@@ -39,20 +43,9 @@ class _ProductsPageState extends State<ProductsPage> {
           child: TextField(
             cursorColor: ColorHelper.primaryDark,
             decoration: InputDecoration(
-              border: WidgetStateInputBorder.resolveWith(
-                (_) => OutlineInputBorder(
-                  borderRadius: BorderRadius.all(Radius.circular(50.0)),
-                  borderSide: BorderSide(
-                    width: 3.0,
-                    color: ColorHelper.primary,
-                  ),
-                ),
-              ),
+              border: ThemeHelper.shoppingHelperWidgetStateInputBorder,
               label: Text('Search'),
-              labelStyle: TextStyle(
-                color: ColorHelper.primaryDark,
-              ),
-
+              labelStyle: TextStyle(color: ColorHelper.primaryDark),
             ),
           ),
         ),
@@ -145,18 +138,43 @@ class _ProductsPageState extends State<ProductsPage> {
                           final List<Product> results =
                               (snapshot.data as SuccessBlocState<List<Product>>)
                                   .result;
-                          return ListView.builder(
-                            itemCount: results.length,
-                            itemBuilder: (BuildContext context, int index) {
-                              final Product product = results[index];
-                              return ProductListTile(
-                                product: product,
-                                roundedTop: index == 0,
-                                roundedBottom: index == results.length - 1,
-                                textColor: ColorHelper.background,
-                              );
-                            },
+
+                          return AnimatedList(
+                            itemBuilder:
+                                (
+                                  BuildContext context,
+                                  int index,
+                                  Animation<double> animation,
+                                ) {
+                                  return ProductListTile(
+                                    animation: animation,
+                                    product: results[index],
+                                    roundedTop: index == 0,
+                                    roundedBottom: index == results.length - 1,
+                                    textColor: ColorHelper.background,
+                                    backgroundColor: ColorHelper.primary,
+                                  );
+                                },
+                            initialItemCount: results.length,
                           );
+
+                          // return ListView.builder(
+                          //   itemCount: results.length,
+                          //   itemBuilder: (BuildContext context, int index) {
+                          //     final Product product = results[index];
+                          //     return ProductListTile(
+                          //       product: product,
+                          //       roundedTop: index == 0,
+                          //       roundedBottom: index == results.length - 1,
+                          //       textColor: ColorHelper.background,
+                          //       onLongPress: () {
+                          //         widget.bloc.deleteProduct(product.id);
+                          //       },
+                          //       backgroundColor: ColorHelper.primary,
+                          //     );
+                          //   },
+                          // );
+                          //
                         } else {
                           return Center(
                             child: Text(
@@ -177,56 +195,78 @@ class _ProductsPageState extends State<ProductsPage> {
   }
 }
 
-class ProductListTile extends StatelessWidget {
+class ProductListTile extends StatefulWidget {
   const ProductListTile({
     super.key,
+    required this.animation,
     required this.product,
     required this.roundedBottom,
     required this.roundedTop,
     required this.textColor,
+    required this.backgroundColor,
   });
 
+  final Animation animation;
   final Product product;
   final bool roundedBottom;
   final bool roundedTop;
   final Color textColor;
+  final Color backgroundColor;
+
+  @override
+  State<ProductListTile> createState() => _ProductListTileState();
+}
+
+class _ProductListTileState extends State<ProductListTile> {
+  late Color backgroundColor;
+
+  @override
+  void initState() {
+    backgroundColor = widget.backgroundColor;
+    super.initState();
+  }
 
   @override
   Widget build(BuildContext context) {
     final borderRadius = BorderRadiusGeometry.vertical(
-      top: roundedTop ? Radius.circular(10.0) : Radius.circular(0.0),
-      bottom: roundedBottom ? Radius.circular(10.0) : Radius.circular(0.0),
+      top: widget.roundedTop ? Radius.circular(10.0) : Radius.circular(0.0),
+      bottom: widget.roundedBottom
+          ? Radius.circular(10.0)
+          : Radius.circular(0.0),
     );
 
     return Padding(
       padding: EdgeInsets.only(
         left: 20.0,
         right: 20.0,
-        top: roundedTop ? 0.0 : 2.0,
+        top: widget.roundedTop ? 0.0 : 2.0,
       ),
       child: Container(
-        padding: EdgeInsets.symmetric(vertical: 8.0, horizontal: 16.0),
         decoration: BoxDecoration(
           borderRadius: borderRadius,
-          color: ColorHelper.primary,
+          color: backgroundColor,
         ),
+        padding: EdgeInsets.symmetric(vertical: 8.0, horizontal: 16.0),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            Icon(categoriesIcons[product.category.name], color: textColor),
+            Icon(
+              categoriesIcons[widget.product.category.name],
+              color: widget.textColor,
+            ),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.center,
                 mainAxisAlignment: MainAxisAlignment.start,
                 children: [
                   Text(
-                    product.name,
-                    style: TextStyle(color: textColor, fontSize: 18.0),
+                    widget.product.name,
+                    style: TextStyle(color: widget.textColor, fontSize: 18.0),
                   ),
                 ],
               ),
             ),
-            Icon(FontAwesomeIcons.plus, color: textColor),
+            Icon(FontAwesomeIcons.plus, color: widget.textColor),
           ],
         ),
       ),

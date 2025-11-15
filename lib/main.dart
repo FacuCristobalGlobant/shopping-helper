@@ -2,7 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hive_ce_flutter/adapters.dart';
 import 'package:hive_ce_poc/data/datasource/hive_datasource.dart';
+import 'package:hive_ce_poc/data/models/product_model.dart';
+import 'package:hive_ce_poc/data/models/shopping_list_model.dart';
+import 'package:hive_ce_poc/data/repositories/product_repository.dart';
 import 'package:hive_ce_poc/domain/entities/shopping_list.dart';
+import 'package:hive_ce_poc/domain/repositories/database_repository.dart';
 import 'package:hive_ce_poc/presentation/base_scaffold.dart';
 import 'package:hive_ce_poc/presentation/bloc/product_bloc.dart';
 import 'package:hive_ce_poc/presentation/bloc/shopping_list_bloc.dart';
@@ -51,7 +55,7 @@ final _router = GoRouter(
             GoRoute(
               path: '/products',
               builder: (BuildContext context, GoRouterState state) =>
-                  ProductsPage(bloc: Provider.of<ProductBloc>(context),),
+                  ProductsPage(bloc: Provider.of<ProductBloc>(context)),
             ),
           ],
         ),
@@ -87,16 +91,24 @@ void main() async {
   await Hive.initFlutter('.');
   Hive.registerAdapters();
 
-  await Hive.openBox<ShoppingList>(StringConstants.shoppingListBox);
-  await Hive.openBox<Product>(StringConstants.productBox);
+  await Hive.openBox<ShoppingListModel>(StringConstants.shoppingListBox);
+  await Hive.openBox<ProductModel>(StringConstants.productBox);
   runApp(
     MultiProvider(
       providers: [
         Provider(create: (_) => ShoppingListBloc()..initialize()),
-        Provider<Database<Product>>(create: (_) => HiveDatabase()),
-        ProxyProvider<Database<Product>, ProductBloc>(
-          update: (BuildContext context, Database<Product> database, _) =>
-              ProductBloc(database: database)..initialize(),
+        Provider<Database<ProductModel>>(create: (_) => HiveDatabase()),
+        ProxyProvider<Database<ProductModel>, DatabaseRepository<Product>>(
+          update: (BuildContext context, Database<ProductModel> database, _) =>
+              ProductRepository(database: database),
+        ),
+        ProxyProvider<DatabaseRepository<Product>, ProductBloc>(
+          update:
+              (
+                BuildContext context,
+                DatabaseRepository<Product> repository,
+                _,
+              ) => ProductBloc(repository: repository)..initialize(),
         ),
       ],
       child: MaterialApp.router(routerConfig: _router),

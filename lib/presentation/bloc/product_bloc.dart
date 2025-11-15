@@ -1,13 +1,15 @@
 import 'dart:async';
 import 'dart:ui';
 
+import 'package:flutter/cupertino.dart';
 import 'package:hive_ce_poc/core/bloc.dart';
 import 'package:hive_ce_poc/core/bloc_state.dart';
 import 'package:hive_ce_poc/data/datasource/database.dart';
 import 'package:hive_ce_poc/domain/entities/product.dart';
+import 'package:hive_ce_poc/domain/repositories/database_repository.dart';
 
 class ProductBloc extends Bloc {
-  ProductBloc({required this.database});
+  ProductBloc({required this.repository});
 
   final List<Product> _products = [];
   final List<Product> _searchResults = [];
@@ -15,7 +17,7 @@ class ProductBloc extends Bloc {
   final StreamController<BlocState> _controller =
       StreamController<BlocState>.broadcast();
 
-  final Database<Product> database;
+  final DatabaseRepository<Product> repository;
 
   Stream<BlocState> get stream => _controller.stream;
 
@@ -28,8 +30,8 @@ class ProductBloc extends Bloc {
   void initialize() async {
     _controller.sink.add(LoadingBlocState());
     try {
-      _searchResults.addAll(await database.get());
-      _controller.sink.add(SuccessBlocState(result: await database.get()));
+      _searchResults.addAll(await repository.get());
+      _controller.sink.add(SuccessBlocState(result: await repository.get()));
     } catch (exception) {
       _controller.sink.add(ErrorBlocState());
     }
@@ -37,19 +39,42 @@ class ProductBloc extends Bloc {
 
   void addProduct(Product product) async {
     try {
-      database.insert(product);
+      repository.insert(product);
       _products.clear();
-      _products.addAll(await database.get());
-      _products.clear();
-      _products.addAll(await database.get());
+      _products.addAll(await repository.get());
       refreshResults();
     } catch (exception) {
       _controller.sink.add(ErrorBlocState());
     }
   }
 
-  void refreshResults() {
+  Future<int?> deleteProduct(int id) async {
+    try {
+      final int? deletedItemId = await repository.delete(id);
+      refreshResults();
+      return deletedItemId;
+    } catch (e) {
+      debugPrint(e.toString());
+    }
+    return null;
+  }
+
+  Future<List<Product>> getAllProducts() async {
+    final List<Product> result = [];
+
+    try {
+      result.addAll(await repository.get());
+    } catch (e) {
+      debugPrint(e.toString());
+    }
+
+    return result;
+  }
+
+  void refreshResults() async {
     _controller.sink.add(LoadingBlocState());
+    _products.clear();
+    _products.addAll(await getAllProducts());
     _controller.sink.add(SuccessBlocState(result: _products));
   }
 }

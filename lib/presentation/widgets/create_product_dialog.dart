@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hive_ce_poc/core/colors.dart';
+import 'package:hive_ce_poc/core/theme_helper.dart';
 
 import '../../domain/entities/product.dart';
 
@@ -31,7 +32,7 @@ class _CreateProductDialogState extends State<CreateProductDialog> {
             child: Center(
               child: Text(
                 'New product',
-                style: TextStyle(fontSize: 24.0, color: ColorHelper.primary, ),
+                style: TextStyle(fontSize: 24.0, color: ColorHelper.primary),
               ),
             ),
           ),
@@ -40,15 +41,7 @@ class _CreateProductDialogState extends State<CreateProductDialog> {
             decoration: InputDecoration(
               labelText: 'Name',
               labelStyle: TextStyle(color: ColorHelper.primaryDark),
-              border: WidgetStateInputBorder.resolveWith(
-                    (_) => OutlineInputBorder(
-                  borderRadius: BorderRadius.all(Radius.circular(50.0)),
-                  borderSide: BorderSide(
-                    width: 1.0,
-                    color: ColorHelper.primary,
-                  ),
-                ),
-              ),
+              border: ThemeHelper.shoppingHelperWidgetStateInputBorder,
             ),
             onChanged: (newValue) {
               name = newValue;
@@ -58,15 +51,7 @@ class _CreateProductDialogState extends State<CreateProductDialog> {
           TextFormField(
             decoration: InputDecoration(
               labelText: 'Description',
-              border: WidgetStateInputBorder.resolveWith(
-                    (_) => OutlineInputBorder(
-                  borderRadius: BorderRadius.all(Radius.circular(50.0)),
-                  borderSide: BorderSide(
-                    width: 1.0,
-                    color: ColorHelper.primary,
-                  ),
-                ),
-              ),
+              border: ThemeHelper.shoppingHelperWidgetStateInputBorder,
             ),
             onChanged: (newValue) {
               description = newValue;
@@ -76,15 +61,7 @@ class _CreateProductDialogState extends State<CreateProductDialog> {
           DropdownMenu(
             hintText: 'Category',
             inputDecorationTheme: InputDecorationTheme(
-              border: WidgetStateInputBorder.resolveWith(
-                    (_) => OutlineInputBorder(
-                  borderRadius: BorderRadius.all(Radius.circular(50.0)),
-                  borderSide: BorderSide(
-                    width: 1.0,
-                    color: ColorHelper.primary,
-                  ),
-                ),
-              ),
+              border: ThemeHelper.shoppingHelperWidgetStateInputBorder,
             ),
             enableFilter: true,
             enableSearch: true,
@@ -92,12 +69,12 @@ class _CreateProductDialogState extends State<CreateProductDialog> {
             dropdownMenuEntries: Category.values
                 .map(
                   (element) => DropdownMenuEntry(
-                value: element,
-                label:
-                element.name[0].toUpperCase() +
-                    element.name.substring(1).toLowerCase(),
-              ),
-            )
+                    value: element,
+                    label:
+                        element.name[0].toUpperCase() +
+                        element.name.substring(1).toLowerCase(),
+                  ),
+                )
                 .toList(),
             onSelected: (newCategory) {
               setState(() {
@@ -108,9 +85,7 @@ class _CreateProductDialogState extends State<CreateProductDialog> {
           const SizedBox(height: 15),
           FilledButton(
             style: ButtonStyle(
-              backgroundColor: WidgetStatePropertyAll(
-                ColorHelper.primary,
-              ),
+              backgroundColor: WidgetStatePropertyAll(ColorHelper.primary),
               shape: WidgetStatePropertyAll(
                 RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(10.0),

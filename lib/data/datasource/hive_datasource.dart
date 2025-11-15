@@ -4,10 +4,12 @@ import 'package:hive_ce_poc/data/datasource/database.dart';
 import 'package:hive_ce_poc/domain/entities/product.dart';
 
 import '../../core/string_constants.dart';
+import '../models/product_model.dart';
 
-class HiveDatabase extends Database<Product> {
-
-  final Box<Product> box = Hive.box<Product>(StringConstants.productBox);
+class HiveDatabase extends Database<ProductModel> {
+  final Box<ProductModel> box = Hive.box<ProductModel>(
+    StringConstants.productBox,
+  );
 
   @override
   Future<int?> delete(int id) async {
@@ -21,17 +23,17 @@ class HiveDatabase extends Database<Product> {
   }
 
   @override
-  Future<List<Product>> get() async {
+  Future<Map<dynamic, ProductModel>> get() async {
     try {
-      return box.values.toList();
+      return box.toMap();
     } catch (exception) {
       debugPrint('unable to retrieve values');
-      return [];
+      return {};
     }
   }
 
   @override
-  Future<Product?> getById(int id) async {
+  Future<ProductModel?> getById(int id) async {
     try {
       return box.getAt(id);
     } catch (exception) {
@@ -41,14 +43,12 @@ class HiveDatabase extends Database<Product> {
   }
 
   @override
-  Future<int?> insert(Product element) async {
+  Future<int?> insert(ProductModel element) async {
     try {
-      await box.add(element);
-      return element.id;
+      return await box.add(element);
     } catch (exception) {
       debugPrint(exception.toString());
       return null;
     }
   }
-
 }

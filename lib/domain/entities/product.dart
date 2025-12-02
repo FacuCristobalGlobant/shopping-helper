@@ -21,7 +21,7 @@ final Map<String, IconData> categoriesIcons = {
   'meat': FontAwesomeIcons.drumstickBite,
   'dairy': FontAwesomeIcons.cow,
   'frozen': FontAwesomeIcons.snowflake,
-  'snack': FontAwesomeIcons.cookieBite,
+  'snacks': FontAwesomeIcons.cookieBite,
   'beverages': FontAwesomeIcons.wineBottle,
   'household': FontAwesomeIcons.toolbox,
   'cleaning': FontAwesomeIcons.broom,

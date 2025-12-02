@@ -9,13 +9,22 @@ class ProductRepository extends DatabaseRepository<Product> {
   final Database<ProductModel> database;
 
   @override
-  Future<int?> delete(int id) {
-    return database.delete(id);
+  Future<Product?> delete(int id) async {
+    final ProductModel? model = await database.delete(id);
+    if (model != null) {
+      return Product(
+        id: id,
+        name: model.name,
+        category: model.category,
+        description: model.description,
+      );
+    }
+    return null;
   }
 
   @override
-  Future<List<Product>> get() async {
-    final Map<dynamic, ProductModel> productModels = await database.get();
+  List<Product> get() {
+    final Map<dynamic, ProductModel> productModels = database.get();
 
     final List<Product> result = [];
 
@@ -35,8 +44,8 @@ class ProductRepository extends DatabaseRepository<Product> {
   }
 
   @override
-  Future<Product?> getById(int id) async {
-    final result = await database.getById(id);
+  Product? getById(int id) {
+    final result = database.getById(id);
 
     if (result == null) return null;
 

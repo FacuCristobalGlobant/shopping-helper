@@ -1,7 +1,5 @@
 import 'package:hive_ce_poc/data/models/shopping_list_item_model.dart';
 
-import '../../domain/entities/product.dart';
-
 class ShoppingListModel {
   ShoppingListModel({
     required this.name,

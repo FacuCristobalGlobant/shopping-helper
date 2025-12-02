@@ -1,5 +1,3 @@
-import '../../domain/entities/product.dart';
-
 class ShoppingListItemModel {
   ShoppingListItemModel({
     required this.done,

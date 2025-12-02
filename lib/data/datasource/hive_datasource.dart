@@ -1,7 +1,6 @@
 import 'package:flutter/cupertino.dart';
 import 'package:hive_ce/hive.dart';
 import 'package:hive_ce_poc/data/datasource/database.dart';
-import 'package:hive_ce_poc/domain/entities/product.dart';
 
 import '../../core/string_constants.dart';
 import '../models/product_model.dart';
@@ -12,10 +11,11 @@ class HiveDatabase extends Database<ProductModel> {
   );
 
   @override
-  Future<int?> delete(int id) async {
+  Future<ProductModel?> delete(int id) async {
     try {
+      final itemToRemove = box.get(id);
       await box.delete(id);
-      return id;
+      return itemToRemove;
     } catch (exception) {
       debugPrint(exception.toString());
       return null;
@@ -23,7 +23,7 @@ class HiveDatabase extends Database<ProductModel> {
   }
 
   @override
-  Future<Map<dynamic, ProductModel>> get() async {
+  Map<dynamic, ProductModel> get() {
     try {
       return box.toMap();
     } catch (exception) {
@@ -33,9 +33,9 @@ class HiveDatabase extends Database<ProductModel> {
   }
 
   @override
-  Future<ProductModel?> getById(int id) async {
+  ProductModel? getById(int id) {
     try {
-      return box.getAt(id);
+      return box.get(id);
     } catch (exception) {
       debugPrint(exception.toString());
       return null;

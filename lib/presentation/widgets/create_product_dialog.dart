@@ -21,93 +21,96 @@ class _CreateProductDialogState extends State<CreateProductDialog> {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: EdgeInsets.symmetric(vertical: 20.0, horizontal: 40.0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: <Widget>[
-          Padding(
-            padding: const EdgeInsets.only(bottom: 26.0),
-            child: Center(
-              child: Text(
-                'New product',
-                style: TextStyle(fontSize: 24.0, color: ColorHelper.primary),
-              ),
-            ),
-          ),
-
-          TextFormField(
-            decoration: InputDecoration(
-              labelText: 'Name',
-              labelStyle: TextStyle(color: ColorHelper.primaryDark),
-              border: ThemeHelper.shoppingHelperWidgetStateInputBorder,
-            ),
-            onChanged: (newValue) {
-              name = newValue;
-            },
-          ),
-          SizedBox(height: 18.0),
-          TextFormField(
-            decoration: InputDecoration(
-              labelText: 'Description',
-              border: ThemeHelper.shoppingHelperWidgetStateInputBorder,
-            ),
-            onChanged: (newValue) {
-              description = newValue;
-            },
-          ),
-          SizedBox(height: 18.0),
-          DropdownMenu(
-            hintText: 'Category',
-            inputDecorationTheme: InputDecorationTheme(
-              border: ThemeHelper.shoppingHelperWidgetStateInputBorder,
-            ),
-            enableFilter: true,
-            enableSearch: true,
-            width: MediaQuery.of(context).size.width * .8,
-            dropdownMenuEntries: Category.values
-                .map(
-                  (element) => DropdownMenuEntry(
-                    value: element,
-                    label:
-                        element.name[0].toUpperCase() +
-                        element.name.substring(1).toLowerCase(),
-                  ),
-                )
-                .toList(),
-            onSelected: (newCategory) {
-              setState(() {
-                category = newCategory;
-              });
-            },
-          ),
-          const SizedBox(height: 15),
-          FilledButton(
-            style: ButtonStyle(
-              backgroundColor: WidgetStatePropertyAll(ColorHelper.primary),
-              shape: WidgetStatePropertyAll(
-                RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(10.0),
+    return ColoredBox(
+      color: ColorHelper.background,
+      child: Padding(
+        padding: EdgeInsets.symmetric(vertical: 20.0, horizontal: 40.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: <Widget>[
+            Padding(
+              padding: const EdgeInsets.only(bottom: 26.0),
+              child: Center(
+                child: Text(
+                  'New product',
+                  style: TextStyle(fontSize: 24.0, color: ColorHelper.primary),
                 ),
               ),
             ),
-            onPressed: () {
-              if (category != null && name != '') {
-                widget.onCreateNew(
-                  Product(
-                    id: 1,
-                    name: name,
-                    description: description,
-                    category: category!,
+
+            TextFormField(
+              decoration: InputDecoration(
+                labelText: 'Name',
+                labelStyle: TextStyle(color: ColorHelper.primaryDark),
+                border: ThemeHelper.shoppingHelperWidgetStateInputBorder,
+              ),
+              onChanged: (newValue) {
+                name = newValue;
+              },
+            ),
+            SizedBox(height: 18.0),
+            TextFormField(
+              decoration: InputDecoration(
+                labelText: 'Description',
+                border: ThemeHelper.shoppingHelperWidgetStateInputBorder,
+              ),
+              onChanged: (newValue) {
+                description = newValue;
+              },
+            ),
+            SizedBox(height: 18.0),
+            DropdownMenu(
+              hintText: 'Category',
+              inputDecorationTheme: InputDecorationTheme(
+                border: ThemeHelper.shoppingHelperWidgetStateInputBorder,
+              ),
+              enableFilter: true,
+              enableSearch: true,
+              width: MediaQuery.of(context).size.width * .8,
+              dropdownMenuEntries: Category.values
+                  .map(
+                    (element) => DropdownMenuEntry(
+                      value: element,
+                      label:
+                          element.name[0].toUpperCase() +
+                          element.name.substring(1).toLowerCase(),
+                    ),
+                  )
+                  .toList(),
+              onSelected: (newCategory) {
+                setState(() {
+                  category = newCategory;
+                });
+              },
+            ),
+            const SizedBox(height: 15),
+            FilledButton(
+              style: ButtonStyle(
+                backgroundColor: WidgetStatePropertyAll(ColorHelper.primary),
+                shape: WidgetStatePropertyAll(
+                  RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10.0),
                   ),
-                );
-              }
-              context.pop();
-            },
-            child: Text('Add', style: TextStyle(fontSize: 16)),
-          ),
-        ],
+                ),
+              ),
+              onPressed: () {
+                if (category != null && name != '') {
+                  widget.onCreateNew(
+                    Product(
+                      id: 1,
+                      name: name,
+                      description: description,
+                      category: category!,
+                    ),
+                  );
+                }
+                context.pop();
+              },
+              child: Text('Add', style: TextStyle(fontSize: 16)),
+            ),
+          ],
+        ),
       ),
     );
   }

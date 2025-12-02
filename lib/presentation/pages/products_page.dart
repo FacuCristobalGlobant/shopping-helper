@@ -1,11 +1,11 @@
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' hide Action;
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
-import 'package:hive_ce_poc/core/bloc_state.dart';
 import 'package:hive_ce_poc/core/theme_helper.dart';
 import 'package:hive_ce_poc/domain/entities/product.dart';
 import 'package:hive_ce_poc/presentation/bloc/product_bloc.dart';
 import 'package:hive_ce_poc/presentation/widgets/create_product_dialog.dart';
 
+import '../../core/bloc_state.dart';
 import '../../core/colors.dart';
 
 class ProductsPage extends StatefulWidget {
@@ -20,15 +20,33 @@ class ProductsPage extends StatefulWidget {
 class _ProductsPageState extends State<ProductsPage> {
   final List<IconData> categoriesIconData = categoriesIcons.values.toList();
   final List<String> categoriesNames = categoriesIcons.keys.toList();
-  final List<Product> productListItems = [];
+  final _listStateKey = GlobalKey<AnimatedListState>();
+  final _selectedCategories = <String>[];
+  final _activeListItems = <Product>[];
+
+  Widget removedItemBuilder({
+    required BuildContext context,
+    required Animation<double> animation,
+    required Product product,
+    required bool isFirst,
+    required bool isLast,
+  }) {
+    return SizeTransition(
+      sizeFactor: animation,
+      child: ProductListTile(
+        backgroundColor: ColorHelper.primary,
+        onDeletePressed: () {},
+        product: product,
+        roundedBottom: isLast,
+        roundedTop: isFirst,
+        textColor: ColorHelper.background,
+      ),
+    );
+  }
 
   @override
   void initState() {
-    widget.bloc.refreshResults();
-    widget.bloc.stream.listen((BlocState state) {
-      productListItems.clear();
-      //productListItems.addAll(iterable)
-    });
+    _activeListItems.addAll(widget.bloc.filteredProductsList);
     super.initState();
   }
 
@@ -47,6 +65,9 @@ class _ProductsPageState extends State<ProductsPage> {
               label: Text('Search'),
               labelStyle: TextStyle(color: ColorHelper.primaryDark),
             ),
+            onChanged: (String newValue) {
+              widget.bloc.addNameFilter(newValue);
+            },
           ),
         ),
         SizedBox(
@@ -55,33 +76,20 @@ class _ProductsPageState extends State<ProductsPage> {
             scrollDirection: Axis.horizontal,
             itemCount: categoriesIcons.length,
             itemBuilder: (BuildContext context, int index) {
-              return Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Padding(
-                    padding: EdgeInsets.symmetric(horizontal: 10.0),
-                    child: Container(
-                      width: 60.0,
-                      height: 60.0,
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(50),
-                        color: ColorHelper.background,
-                        border: BoxBorder.all(
-                          color: ColorHelper.primary,
-                          width: 3.0,
-                        ),
-                      ),
-                      child: Icon(
-                        categoriesIconData[index],
-                        color: ColorHelper.primaryDark,
-                      ),
-                    ),
-                  ),
-                  Text(
-                    categoriesNames[index],
-                    style: TextStyle(color: ColorHelper.primary),
-                  ),
-                ],
+              return CategoryFilterItem(
+                categoryName: categoriesNames[index],
+                iconData: categoriesIconData[index],
+                isSelected: _selectedCategories.contains(
+                  categoriesNames[index],
+                ),
+                onClick: () {
+                  if (_selectedCategories.contains(categoriesNames[index])) {
+                    _selectedCategories.remove(categoriesNames[index]);
+                  } else {
+                    _selectedCategories.add(categoriesNames[index]);
+                  }
+                  widget.bloc.updateCategoriesFilter(categories: _selectedCategories);
+                },
               );
             },
           ),
@@ -126,63 +134,100 @@ class _ProductsPageState extends State<ProductsPage> {
               ),
               SizedBox(height: 20.0),
               Expanded(
-                child: StreamBuilder(
-                  stream: widget.bloc.stream,
+                child: StreamBuilder<BlocState>(
+                  initialData: SuccessBlocState(
+                    result: widget.bloc.filteredProductsList,
+                  ),
+                  stream: widget.bloc.filteredProductsStream,
                   builder:
                       (
                         BuildContext context,
                         AsyncSnapshot<BlocState> snapshot,
                       ) {
-                        if (snapshot.hasData &&
-                            snapshot.data is SuccessBlocState<List<Product>>) {
-                          final List<Product> results =
-                              (snapshot.data as SuccessBlocState<List<Product>>)
-                                  .result;
-
-                          return AnimatedList(
-                            itemBuilder:
-                                (
-                                  BuildContext context,
-                                  int index,
-                                  Animation<double> animation,
-                                ) {
-                                  return ProductListTile(
-                                    animation: animation,
-                                    product: results[index],
-                                    roundedTop: index == 0,
-                                    roundedBottom: index == results.length - 1,
-                                    textColor: ColorHelper.background,
-                                    backgroundColor: ColorHelper.primary,
-                                  );
-                                },
-                            initialItemCount: results.length,
-                          );
-
-                          // return ListView.builder(
-                          //   itemCount: results.length,
-                          //   itemBuilder: (BuildContext context, int index) {
-                          //     final Product product = results[index];
-                          //     return ProductListTile(
-                          //       product: product,
-                          //       roundedTop: index == 0,
-                          //       roundedBottom: index == results.length - 1,
-                          //       textColor: ColorHelper.background,
-                          //       onLongPress: () {
-                          //         widget.bloc.deleteProduct(product.id);
-                          //       },
-                          //       backgroundColor: ColorHelper.primary,
-                          //     );
-                          //   },
-                          // );
-                          //
-                        } else {
-                          return Center(
-                            child: Text(
-                              'No results',
-                              style: TextStyle(color: ColorHelper.primary),
-                            ),
-                          );
+                        if (snapshot.hasData) {
+                          if (snapshot.data
+                              is SuccessBlocState<List<Product>>) {
+                            final List<Product> filteredProducts =
+                                (snapshot.data
+                                        as SuccessBlocState<List<Product>>)
+                                    .result;
+                            if (_activeListItems.isNotEmpty) {
+                              for (
+                                int index = _activeListItems.length - 1;
+                                index >= 0;
+                                index--
+                              ) {
+                                if (!filteredProducts.contains(
+                                  _activeListItems[index],
+                                )) {
+                                  final Product itemToRemove = _activeListItems[index];
+                                  _listStateKey.currentState
+                                      ?.removeItem(index, (
+                                        BuildContext context,
+                                        Animation<double> animation,
+                                      ) {
+                                        return removedItemBuilder(
+                                          context: context,
+                                          animation: animation,
+                                          product: itemToRemove,
+                                          isFirst: index == _activeListItems.length - 1,
+                                          isLast: index == 0,
+                                        );
+                                      }, duration: Duration(milliseconds: 200));
+                                  _activeListItems.removeAt(index);
+                                }
+                              }
+                            }
+                            for (
+                              int index = 0;
+                              index < filteredProducts.length;
+                              index++
+                            ) {
+                              if (!_activeListItems.contains(
+                                filteredProducts[index],
+                              )) {
+                                _activeListItems.insert(
+                                  index,
+                                  filteredProducts[index],
+                                );
+                                _listStateKey.currentState?.insertItem(index);
+                              }
+                            }
+                            return AnimatedList(
+                              key: _listStateKey,
+                              itemBuilder:
+                                  (
+                                    BuildContext context,
+                                    int index,
+                                    Animation<double> animation,
+                                  ) {
+                                    final product = _activeListItems[index];
+                                    return SizeTransition(
+                                      sizeFactor: animation,
+                                      child: ProductListTile(
+                                        key: GlobalKey(),
+                                        backgroundColor: ColorHelper.primary,
+                                        onDeletePressed: () {
+                                          widget.bloc.deleteProduct(product.id);
+                                        },
+                                        product: product,
+                                        roundedTop: index == 0,
+                                        roundedBottom:
+                                            index ==
+                                            filteredProducts.length - 1,
+                                        textColor: ColorHelper.background,
+                                      ),
+                                    );
+                                  },
+                              initialItemCount: filteredProducts.length,
+                            );
+                          }
                         }
+                        return Center(
+                          child: CircularProgressIndicator(
+                            color: ColorHelper.primary,
+                          ),
+                        );
                       },
                 ),
               ),
@@ -195,36 +240,100 @@ class _ProductsPageState extends State<ProductsPage> {
   }
 }
 
+class CategoryFilterItem extends StatefulWidget {
+  const CategoryFilterItem({
+    super.key,
+    required this.categoryName,
+    required this.iconData,
+    required this.isSelected,
+    required this.onClick,
+  });
+
+  final String categoryName;
+  final IconData iconData;
+  final bool isSelected;
+  final Function onClick;
+
+  @override
+  State<CategoryFilterItem> createState() => _CategoryFilterItemState();
+}
+
+class _CategoryFilterItemState extends State<CategoryFilterItem> {
+  late bool isSelected;
+
+  @override
+  void initState() {
+    isSelected = widget.isSelected;
+    super.initState();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: () {
+        setState(() {
+          isSelected = !isSelected;
+        });
+        widget.onClick();
+      },
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Padding(
+            padding: EdgeInsets.symmetric(horizontal: 10.0),
+            child: AnimatedContainer(
+              duration: Duration(milliseconds: 100),
+              width: 60.0,
+              height: 60.0,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(50),
+                color: isSelected
+                    ? ColorHelper.primary
+                    : ColorHelper.background,
+                border: BoxBorder.all(color: ColorHelper.primary, width: 3.0),
+              ),
+              child: Icon(
+                widget.iconData,
+                color: isSelected
+                    ? ColorHelper.background
+                    : ColorHelper.primaryDark,
+              ),
+            ),
+          ),
+          Text(
+            widget.categoryName,
+            style: TextStyle(color: ColorHelper.primary),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class ProductListTile extends StatefulWidget {
   const ProductListTile({
     super.key,
-    required this.animation,
+    required this.backgroundColor,
+    required this.onDeletePressed,
     required this.product,
     required this.roundedBottom,
     required this.roundedTop,
     required this.textColor,
-    required this.backgroundColor,
   });
 
-  final Animation animation;
+  final Color backgroundColor;
+  final Function? onDeletePressed;
   final Product product;
   final bool roundedBottom;
   final bool roundedTop;
   final Color textColor;
-  final Color backgroundColor;
 
   @override
   State<ProductListTile> createState() => _ProductListTileState();
 }
 
 class _ProductListTileState extends State<ProductListTile> {
-  late Color backgroundColor;
-
-  @override
-  void initState() {
-    backgroundColor = widget.backgroundColor;
-    super.initState();
-  }
+  bool areOptionsVisible = false;
 
   @override
   Widget build(BuildContext context) {
@@ -241,33 +350,116 @@ class _ProductListTileState extends State<ProductListTile> {
         right: 20.0,
         top: widget.roundedTop ? 0.0 : 2.0,
       ),
-      child: Container(
-        decoration: BoxDecoration(
-          borderRadius: borderRadius,
-          color: backgroundColor,
-        ),
-        padding: EdgeInsets.symmetric(vertical: 8.0, horizontal: 16.0),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            Icon(
-              categoriesIcons[widget.product.category.name],
-              color: widget.textColor,
-            ),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.center,
-                mainAxisAlignment: MainAxisAlignment.start,
-                children: [
-                  Text(
-                    widget.product.name,
-                    style: TextStyle(color: widget.textColor, fontSize: 18.0),
-                  ),
-                ],
+      child: GestureDetector(
+        onTap: () {
+          setState(() {
+            areOptionsVisible = !areOptionsVisible;
+          });
+        },
+        child: Container(
+          decoration: BoxDecoration(
+            borderRadius: borderRadius,
+            color: widget.backgroundColor,
+          ),
+          child: Column(
+            children: [
+              Padding(
+                padding: EdgeInsets.symmetric(vertical: 12.0, horizontal: 18.0),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    Icon(
+                      categoriesIcons[widget.product.category.name],
+                      color: widget.textColor,
+                    ),
+                    SizedBox(width: 20.0),
+                    Container(
+                      height: 40.0,
+                      width: 1.0,
+                      color: ColorHelper.background,
+                    ),
+                    SizedBox(width: 20.0),
+                    Expanded(
+                      child: Text(
+                        widget.product.name,
+                        style: TextStyle(
+                          color: widget.textColor,
+                          fontSize: 18.0,
+                        ),
+                      ),
+                    ),
+                    Stack(
+                      children: [
+                        AnimatedOpacity(
+                          duration: Duration(milliseconds: 200),
+                          opacity: areOptionsVisible ? 0.0 : 1.0,
+                          child: Icon(
+                            FontAwesomeIcons.plus,
+                            color: widget.textColor,
+                          ),
+                        ),
+                        Icon(FontAwesomeIcons.minus, color: widget.textColor),
+                      ],
+                    ),
+                  ],
+                ),
               ),
-            ),
-            Icon(FontAwesomeIcons.plus, color: widget.textColor),
-          ],
+              AnimatedContainer(
+                color: ColorHelper.background,
+                duration: Duration(milliseconds: 200),
+                height: areOptionsVisible ? 70 : 0,
+                padding: EdgeInsets.symmetric(vertical: 12.0, horizontal: 18.0),
+                child: AnimatedOpacity(
+                  duration: Duration(milliseconds: 200),
+                  opacity: areOptionsVisible ? 1 : 0,
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceAround,
+                    children: [
+                      Expanded(
+                        child: Padding(
+                          padding: EdgeInsets.symmetric(horizontal: 18.0),
+                          child: OutlinedButton(
+                            onPressed: () {},
+                            style: OutlinedButton.styleFrom(
+                              side: BorderSide(
+                                width: 2.0,
+                                color: ColorHelper.primaryDark,
+                              ),
+                            ),
+                            child: Text(
+                              'Add to list',
+                              style: TextStyle(color: ColorHelper.primaryDark),
+                            ),
+                          ),
+                        ),
+                      ),
+                      IconButton(
+                        onPressed: () {
+                          widget.onDeletePressed!();
+                          setState(() {
+                            areOptionsVisible = false;
+                          });
+                        },
+                        icon: Icon(
+                          FontAwesomeIcons.trash,
+                          size: 16.0,
+                          color: ColorHelper.primaryDark,
+                        ),
+                      ),
+                      IconButton(
+                        onPressed: () {},
+                        icon: Icon(
+                          FontAwesomeIcons.pencil,
+                          size: 16.0,
+                          color: ColorHelper.primaryDark,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );

@@ -1,9 +1,9 @@
 abstract class Database<T> {
-  Future<Map<dynamic, T>> get();
+  Map<dynamic, T> get();
 
-  Future<T?> getById(int id);
+  T? getById(int id);
 
   Future<int?> insert(T element);
 
-  Future<int?> delete(int id);
+  Future<T?> delete(int id);
 }

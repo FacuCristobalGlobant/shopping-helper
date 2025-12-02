@@ -1,6 +1,6 @@
 abstract class DatabaseRepository<T> {
-  Future<List<T>> get();
-  Future<T?> getById(int id);
+  List<T> get();
+  T? getById(int id);
   Future<int?> insert(T element);
-  Future<int?> delete(int id);
+  Future<T?> delete(int id);
 }

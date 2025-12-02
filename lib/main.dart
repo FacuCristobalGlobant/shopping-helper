@@ -5,13 +5,13 @@ import 'package:hive_ce_poc/data/datasource/hive_datasource.dart';
 import 'package:hive_ce_poc/data/models/product_model.dart';
 import 'package:hive_ce_poc/data/models/shopping_list_model.dart';
 import 'package:hive_ce_poc/data/repositories/product_repository.dart';
-import 'package:hive_ce_poc/domain/entities/shopping_list.dart';
 import 'package:hive_ce_poc/domain/repositories/database_repository.dart';
 import 'package:hive_ce_poc/presentation/base_scaffold.dart';
 import 'package:hive_ce_poc/presentation/bloc/product_bloc.dart';
 import 'package:hive_ce_poc/presentation/bloc/shopping_list_bloc.dart';
 import 'package:hive_ce_poc/presentation/pages/home_page.dart';
 import 'package:hive_ce_poc/presentation/pages/products_page.dart';
+import 'package:hive_ce_poc/presentation/pages/shopping_lists_page.dart';
 import 'package:provider/provider.dart';
 
 import 'core/string_constants.dart';
@@ -46,7 +46,7 @@ final _router = GoRouter(
             GoRoute(
               path: '/lists',
               builder: (BuildContext context, GoRouterState state) =>
-                  const Placeholder(),
+                  const ShoppingListsPage(),
             ),
           ],
         ),
